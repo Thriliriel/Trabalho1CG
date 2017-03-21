@@ -20,6 +20,11 @@ float LastTickCount = 0.0f;
 float CurrentTickCount;
 char FrameRate[50] = "";
 
+float movement = 0.1;
+double move_y = 0;
+double move_x = 0;
+double move_z = 0;
+
 //array de disposição do mapa
 //0 = cubinhos
 //1 = caminho livre
@@ -46,6 +51,8 @@ void init(void)
 	// Define a cor do fundo da tela (BRANCO)
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
+	// Especifica posição do observador e do alvo
+	//gluLookAt(0, 0, 10, 0, 0, 10, 0, 0, 0);
 }
 
 // **********************************************************************
@@ -89,11 +96,12 @@ void display(void)
 {
 
 	// Limpa a tela coma cor de fundo
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// Define os limites lógicos da área OpenGL dentro da Janela
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+	
 	//glOrtho(-1, 11, -1, 11, 0, 1);
 	glOrtho(-1,      // left
 		MAP_SIZE * scale + 1,  // right
@@ -114,6 +122,22 @@ void display(void)
 	int indexI = 0;
 	int indexControlJ = 0;
 	int indexControlI = 0;
+
+	// move quando o usuário usa as teclas
+	/*glTranslatef(move_x, 0.0, 0.0);
+	glTranslatef(0, move_y, 0.0);
+	glTranslatef(0, 0, move_z);*/
+
+	//glRotatef(rotate_x, 1.0, 0.0, 0.0);
+	//glRotatef(rotate_y, 0.0, 1.0, 0.0);
+
+	//With each triplet of values, you specify: 
+	//1) where are you, 
+	//2) which direction are you looking, and 
+	//3) which direction is up (all in world space). 
+	gluLookAt(move_x, move_y, 0, move_x, move_y, -1, 0, 1, 0);
+	//glTranslatef(0, 0, move_z);
+
 	for (int j = 0; j < MAP_SIZE*scale; j++) {
 		indexI = 0;
 
@@ -129,28 +153,67 @@ void display(void)
 			}
 
 			if (map[index] == 0) {
-				glBegin(GL_QUADS);
-
+				//Lado preto/branco - FRENTE
+				glBegin(GL_POLYGON);
 				glColor3f(0, 0, 0);
-
-				glVertex2f(i, j);
-
+				glVertex3f(i, j, 0);
 				glColor3f(1, 1, 1);
-
-				glVertex2f(i, j + 1);
-
+				glVertex3f(i, j + 1, 0);
 				glColor3f(0, 0, 0);
-
-				glVertex2f(i + 1, j + 1);
-
+				glVertex3f(i + 1, j + 1, 0);
 				glColor3f(1, 1, 1);
+				glVertex3f(i + 1, j, 0);
+				glEnd();
 
-				glVertex2f(i + 1, j);
+				//outros lados - preto
+				glColor3f(0, 0, 0);
+				// TRASEIRA
+				glBegin(GL_POLYGON);
+				//glColor3f(1.0, 1.0, 1.0);
+				glVertex3f(i, j, -1);
+				glVertex3f(i, j + 1, -1);
+				glVertex3f(i + 1, j + 1, -1);
+				glVertex3f(i + 1, j, -1);
+				glEnd();
 
+				// DIREITA
+				glBegin(GL_POLYGON);
+				//glColor3f(1.0, 0.0, 1.0);
+				glVertex3f(i + 1, j, 0);
+				glVertex3f(i + 1, j + 1, 0);
+				glVertex3f(i + 1, j + 1, -1);
+				glVertex3f(i + 1, j, -1);
+				glEnd();
+
+				// ESQUERDA
+				glBegin(GL_POLYGON);
+				//glColor3f(0.0, 1.0, 0.0);
+				glVertex3f(i, j, 0);
+				glVertex3f(i, j + 1, 0);
+				glVertex3f(i, j + 1, -1);
+				glVertex3f(i, j, -1);
+				glEnd();
+
+				// TOPO
+				glBegin(GL_POLYGON);
+				//glColor3f(0.0, 0.0, 1.0);
+				glVertex3f(i, j + 1, 0);
+				glVertex3f(i, j + 1, -1);
+				glVertex3f(i + 1, j + 1, -1);
+				glVertex3f(i + 1, j + 1, 0);
+				glEnd();
+
+				// BASE
+				glBegin(GL_POLYGON);
+				//glColor3f(1.0, 0.0, 0.0);
+				glVertex3f(i, j, 0);
+				glVertex3f(i, j, -1);
+				glVertex3f(i + 1, j, -1);
+				glVertex3f(i + 1, j, 0);
 				glEnd();
 			}
 
-			if (indexControlI < scale-1) {
+			if (indexControlI < scale - 1) {
 				indexControlI++;
 			}
 			else {
@@ -158,8 +221,8 @@ void display(void)
 				indexI++;
 			}
 		}
-		
-		if (indexControlJ < scale-1) {
+
+		if (indexControlJ < scale - 1) {
 			indexControlJ++;
 		}
 		else {
@@ -168,6 +231,7 @@ void display(void)
 		}
 	}
 
+	glFlush();
 	glutSwapBuffers();
 
 	/*CurrentTickCount = clock() * 0.001f;
@@ -196,7 +260,15 @@ void keyboard(unsigned char key, int x, int y)
 			exit(0);   // a tecla ESC for pressionada
 			break;
 		case 119: //w
-			changeCamera(10, 0);
+			move_z += movement;
+			//  Requisitar atualização do display
+			glutPostRedisplay();
+			break;
+		case 115: //s
+			move_z -= movement;
+			//  Requisitar atualização do display
+			glutPostRedisplay();
+			break;
 		default:
 			break;
 	}
@@ -210,19 +282,22 @@ void keyboard(unsigned char key, int x, int y)
 // **********************************************************************
 void arrow_keys(int a_keys, int x, int y)
 {
-	switch (a_keys)
-	{
-	case GLUT_KEY_UP:       // Se pressionar UP
-		glutFullScreen(); // Vai para Full Screen
-		break;
-	case GLUT_KEY_DOWN:     // Se pressionar UP
-							// Reposiciona a janela
-		glutPositionWindow(50, 50);
-		glutReshapeWindow(700, 500);
-		break;
-	default:
-		break;
-	}
+	//  Seta direita - aumenta rotação em 5 graus
+	if (a_keys == GLUT_KEY_RIGHT)
+		move_x += movement;
+
+	//  Seta para esquerda - diminui a rotação por 5 graus
+	else if (a_keys == GLUT_KEY_LEFT)
+		move_x -= movement;
+
+	else if (a_keys == GLUT_KEY_UP)
+		move_y -= movement;
+
+	else if (a_keys == GLUT_KEY_DOWN)
+		move_y += movement;
+
+	//  Requisitar atualização do display
+	glutPostRedisplay();
 }
 
 // **********************************************************************
@@ -230,7 +305,7 @@ void arrow_keys(int a_keys, int x, int y)
 //
 //
 // **********************************************************************
-int  main(int argc, char** argv)
+int main(int argc, char** argv)
 {
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH | GLUT_RGB);
@@ -245,6 +320,9 @@ int  main(int argc, char** argv)
 
 	// executa algumas inicializações
 	init();
+
+	// Habilite o teste de profundidade do Z-buffer
+	glEnable(GL_DEPTH_TEST);
 
 	// Define que o tratador de evento para
 	// o redesenho da tela. A funcao "display"
@@ -277,102 +355,3 @@ int  main(int argc, char** argv)
 
 	return 0;
 }
-
-/*
-// TeaPot3D.c - Isabel H. Manssour
-// Um programa OpenGL que exemplifica a visualização 
-// de objetos 3D.
-// Este código está baseado nos exemplos disponíveis no livro 
-// "OpenGL SuperBible", 2nd Edition, de Richard S. e Wright Jr.
-
-
-GLfloat angle, fAspect;
-
-// Função callback chamada para fazer o desenho
-void Desenha(void)
-{
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	glColor3f(0.0f, 0.0f, 1.0f);
-
-	// Desenha o teapot com a cor corrente (wire-frame)
-	glutWireTeapot(50.0f);
-
-	// Executa os comandos OpenGL
-	glutSwapBuffers();
-}
-
-// Inicializa parâmetros de rendering
-void Inicializa(void)
-{
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	angle = 45;
-}
-
-// Função usada para especificar a posição do observador virtual
-void PosicionaObservador(void)
-{
-	// Especifica sistema de coordenadas do modelo
-	glMatrixMode(GL_MODELVIEW);
-	// Inicializa sistema de coordenadas do modelo
-	glLoadIdentity();
-	// Especifica posição do observador e do alvo
-	gluLookAt(0, 80, 200, 0, 0, 0, 0, 1, 0);
-}
-
-// Função usada para especificar o volume de visualização
-void EspecificaParametrosVisualizacao(void)
-{
-	// Especifica sistema de coordenadas de projeção
-	glMatrixMode(GL_PROJECTION);
-	// Inicializa sistema de coordenadas de projeção
-	glLoadIdentity();
-
-	// Especifica a projeção perspectiva(angulo,aspecto,zMin,zMax)
-	gluPerspective(angle, fAspect, 0.5, 500);
-
-	PosicionaObservador();
-}
-
-// Função callback chamada quando o tamanho da janela é alterado 
-void AlteraTamanhoJanela(GLsizei w, GLsizei h)
-{
-	// Para previnir uma divisão por zero
-	if (h == 0) h = 1;
-
-	// Especifica o tamanho da viewport
-	glViewport(0, 0, w, h);
-
-	// Calcula a correção de aspecto
-	fAspect = (GLfloat)w / (GLfloat)h;
-
-	EspecificaParametrosVisualizacao();
-}
-
-// Função callback chamada para gerenciar eventos do mouse
-void GerenciaMouse(int button, int state, int x, int y)
-{
-	if (button == GLUT_LEFT_BUTTON)
-		if (state == GLUT_DOWN) {  // Zoom-in
-			if (angle >= 10) angle -= 5;
-		}
-	if (button == GLUT_RIGHT_BUTTON)
-		if (state == GLUT_DOWN) {  // Zoom-out
-			if (angle <= 130) angle += 5;
-		}
-	EspecificaParametrosVisualizacao();
-	glutPostRedisplay();
-}
-
-// Programa Principal
-int main(void)
-{
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
-	glutInitWindowSize(350, 300);
-	glutCreateWindow("Visualizacao 3D");
-	glutDisplayFunc(Desenha);
-	glutReshapeFunc(AlteraTamanhoJanela);
-	glutMouseFunc(GerenciaMouse);
-	Inicializa();
-	glutMainLoop();
-}*/
