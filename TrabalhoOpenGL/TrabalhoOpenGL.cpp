@@ -1,216 +1,136 @@
-// TrabalhoOpenGL.cpp : Defines the entry point for the console application.
-//
+// Iluminacao.c - Isabel H. Manssour
+// Um programa OpenGL que exemplifica a visualização 
+// de objetos 3D com a inserção de uma fonte de luz.
+// Este código está baseado nos exemplos disponíveis no livro 
+// "OpenGL SuperBible", 2nd Edition, de Richard S. e Wright Jr.
 
 #include "stdafx.h"
-#include <stdlib.h>
-#include "gl\glut.h"
-#include <time.h>
-#include <iostream>
+#include <gl/glut.h>
 
-using namespace std;
+#include "csvReader.h"
 
-//largura/altura do mapa
-const int MAP_SIZE = 10;
-
+GLfloat angle, fAspect;
+float angleMovement = 5;
+float movement = 2;
+float move_x = 0;
+float move_y = 0;
+std::vector<std::vector<int>> myMap;
 //escala do mapa (default 1)
 int scale = 1;
+int MAP_SIZE;
 
-int Fps = 0;
-float LastTickCount = 0.0f;
-float CurrentTickCount;
-char FrameRate[50] = "";
-
-float movement = 0.1;
-double move_y = 0;
-double move_x = 0;
-double move_z = 0;
-
-//array de disposição do mapa
-//0 = cubinhos
-//1 = caminho livre
-int map[MAP_SIZE*MAP_SIZE] = {
-	0,0,0,1,0,0,1,0,0,0,
-	0,0,0,1,0,0,1,0,0,0,
-	0,0,0,1,0,0,1,0,0,0,
-	1,1,1,1,1,1,1,1,1,1,
-	0,0,0,1,0,0,1,0,0,0,
-	0,0,0,1,0,0,1,0,0,0,
-	1,1,1,1,1,1,1,1,1,1,
-	0,0,0,1,0,0,1,0,0,0,
-	0,0,0,1,0,0,1,0,0,0,
-	0,0,0,1,0,0,1,0,0,0
-};
-
-// **********************************************************************
-//  void init(void)
-//  Inicializa os parâmetros globais de OpenGL
-//
-// **********************************************************************
-void init(void)
+void fps()
 {
-	// Define a cor do fundo da tela (BRANCO)
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	static float fps = 0.0f;
+	static float before = 0.0f;
+	static char strFPS[20] = { 0 };
+	static float now = (glutGet(GLUT_ELAPSED_TIME));
 
-	// Especifica posição do observador e do alvo
-	//gluLookAt(0, 0, 10, 0, 0, 10, 0, 0, 0);
+	++fps;
+	std::cout << "Now: " << now << " - FPS: " << fps << "\n";
+	if (now - before>1.0f)
+	{
+		before = now;
+		std::cout << "FPS:" << int(fps) << std::endl;
+		fps = 0.0f;
+	}
 }
 
-// **********************************************************************
-//  void reshape( int w, int h )
-//  trata o redimensionamento da janela OpenGL
-//
-// **********************************************************************
-void reshape(int w, int h)
+void DrawCube(double cubeCoord_x, double cubeCoord_y, double cubeCoord_z, double width, double length, double height)
 {
-	// Reset the coordinate system before modifying
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	// Define a área a ser ocupada pela área OpenGL dentro da Janela
-	glViewport(0, 0, w, h);
+	// Desenha um cubo
+	glBegin(GL_QUADS);			// Face posterior
+	glNormal3f(0.0, 0.0, 1.0);	// Normal da face
+	glVertex3f(cubeCoord_x + width, cubeCoord_y + length, cubeCoord_z + height);
+	glVertex3f(cubeCoord_x, cubeCoord_y + length, cubeCoord_z + height);
+	glVertex3f(cubeCoord_x, cubeCoord_y, cubeCoord_z + height);
+	glVertex3f(cubeCoord_x + width, cubeCoord_y, cubeCoord_z + height);
+	glEnd();
 
-	// Define os limites lógicos da área OpenGL dentro da Janela
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	//glOrtho(0, MAP_SIZE, 0, MAP_SIZE, 0, 1);
-	glOrtho(-1,      // left
-		MAP_SIZE * scale + 1,  // right
-		MAP_SIZE * scale + 1, // bottom
-		-1,      // top
-		0,      // zNear
-		1       // zFar
-	);
+	glBegin(GL_QUADS);			// Face frontal
+	glNormal3f(0.0, 0.0, -1.0); 	// Normal da face
+	glVertex3f(cubeCoord_x + width, cubeCoord_y + length, cubeCoord_z);
+	glVertex3f(cubeCoord_x + width, cubeCoord_y, cubeCoord_z);
+	glVertex3f(cubeCoord_x, cubeCoord_y, cubeCoord_z);
+	glVertex3f(cubeCoord_x, cubeCoord_y + length, cubeCoord_z);
+	glEnd();
+
+	glBegin(GL_QUADS);			// Face lateral esquerda
+	glNormal3f(-1.0, 0.0, 0.0); 	// Normal da face
+	glVertex3f(cubeCoord_x, cubeCoord_y + length, cubeCoord_z + height);
+	glVertex3f(cubeCoord_x, cubeCoord_y + length, cubeCoord_z);
+	glVertex3f(cubeCoord_x, cubeCoord_y, cubeCoord_z);
+	glVertex3f(cubeCoord_x, cubeCoord_y, cubeCoord_z + height);
+	glEnd();
+
+	glBegin(GL_QUADS);			// Face lateral direita
+	glNormal3f(1.0, 0.0, 0.0);	// Normal da face
+	glVertex3f(cubeCoord_x + width, cubeCoord_y + length, cubeCoord_z + height);
+	glVertex3f(cubeCoord_x + width, cubeCoord_y, cubeCoord_z + height);
+	glVertex3f(cubeCoord_x + width, cubeCoord_y, cubeCoord_z);
+	glVertex3f(cubeCoord_x + width, cubeCoord_y + length, cubeCoord_z);
+	glEnd();
+
+	glBegin(GL_QUADS);			// Face superior
+	glNormal3f(0.0, 1.0, 0.0);  	// Normal da face
+	glVertex3f(cubeCoord_x, cubeCoord_y + length, cubeCoord_z);
+	glVertex3f(cubeCoord_x, cubeCoord_y + length, cubeCoord_z + height);
+	glVertex3f(cubeCoord_x + width, cubeCoord_y + length, cubeCoord_z + height);
+	glVertex3f(cubeCoord_x + width, cubeCoord_y + length, cubeCoord_z);
+	glEnd();
+
+	glBegin(GL_QUADS);			// Face inferior
+	glNormal3f(0.0, -1.0, 0.0); 	// Normal da face
+	glVertex3f(cubeCoord_x, cubeCoord_y, cubeCoord_z);
+	glVertex3f(cubeCoord_x + width, cubeCoord_y, cubeCoord_z);
+	glVertex3f(cubeCoord_x + width, cubeCoord_y, cubeCoord_z + height);
+	glVertex3f(cubeCoord_x, cubeCoord_y, cubeCoord_z + height);
+	glEnd();
 }
 
-void changeCamera(int x, int y) {
-	// Especifica posição do observador e do alvo
-	gluLookAt(0, 0, 0, 0, 0, 0, 0, 0, 0);
-
-	glutPostRedisplay();
-}
-
-// **********************************************************************
-//  void display( void )
-//
-// **********************************************************************
-void display(void)
+// Função callback chamada para fazer o desenho
+void Desenha(void)
 {
-
-	// Limpa a tela coma cor de fundo
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//glColor3f(0.0f, 0.0f, 1.0f);
+	//branco, para dar melhor contraste
+	glColor3f(1, 1, 1);
 
-	// Define os limites lógicos da área OpenGL dentro da Janela
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	
-	//glOrtho(-1, 11, -1, 11, 0, 1);
-	glOrtho(-1,      // left
-		MAP_SIZE * scale + 1,  // right
-		MAP_SIZE * scale + 1, // bottom
-		-1,      // top
-		0,      // zNear
-		1       // zFar
-	);
+	//deixa mais centralizado, mas deve dar para fazer isso com a camera
+	glTranslatef(-50*scale, -50*scale, 0.0);
 
-	// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-	// Coloque aqui as chamadas das rotinas que desenha os objetos
-	// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+	int cubeWidth(10);
+	int cubeLength(10);
 
-	glLineWidth(3);
+	int line(0);
 
-	int index = 0;
+	//laço de desenho original do William
+	/*for (std::vector<std::vector<int>>::iterator lineIterator = myMap.begin(); lineIterator != myMap.end(); ++lineIterator)
+	{
+		int column(0);
+		for (std::vector<int>::iterator columnIterator = lineIterator->begin(); columnIterator != lineIterator->end(); ++columnIterator)
+		{
+			if (*columnIterator != 0)
+			{
+				DrawCube(line * cubeWidth + line, column * cubeLength + column, 0, cubeWidth, cubeLength, static_cast<double>(*columnIterator));
+			}
+			++column;
+		}
+		++line;
+	}*/
+
+	//laço com escala
 	int indexJ = 0;
 	int indexI = 0;
 	int indexControlJ = 0;
 	int indexControlI = 0;
-
-	// move quando o usuário usa as teclas
-	/*glTranslatef(move_x, 0.0, 0.0);
-	glTranslatef(0, move_y, 0.0);
-	glTranslatef(0, 0, move_z);*/
-
-	//glRotatef(rotate_x, 1.0, 0.0, 0.0);
-	//glRotatef(rotate_y, 0.0, 1.0, 0.0);
-
-	//With each triplet of values, you specify: 
-	//1) where are you, 
-	//2) which direction are you looking, and 
-	//3) which direction is up (all in world space). 
-	gluLookAt(move_x, move_y, 0, move_x, move_y, -1, 0, 1, 0);
-	//glTranslatef(0, 0, move_z);
-
 	for (int j = 0; j < MAP_SIZE*scale; j++) {
 		indexI = 0;
 
-		if (indexControlJ == 0) {
-			//se map nessa posição for 0, desenha
-			index = (indexJ * MAP_SIZE) + indexI;
-		}
-
 		for (int i = 0; i < MAP_SIZE*scale; i++) {
-			if (indexControlI == 0) {
-				//se map nessa posição for 0, desenha
-				index = (indexJ * MAP_SIZE) + indexI;
-			}
 
-			if (map[index] == 0) {
-				//Lado preto/branco - FRENTE
-				glBegin(GL_POLYGON);
-				glColor3f(0, 0, 0);
-				glVertex3f(i, j, 0);
-				glColor3f(1, 1, 1);
-				glVertex3f(i, j + 1, 0);
-				glColor3f(0, 0, 0);
-				glVertex3f(i + 1, j + 1, 0);
-				glColor3f(1, 1, 1);
-				glVertex3f(i + 1, j, 0);
-				glEnd();
-
-				//outros lados - preto
-				glColor3f(0, 0, 0);
-				// TRASEIRA
-				glBegin(GL_POLYGON);
-				//glColor3f(1.0, 1.0, 1.0);
-				glVertex3f(i, j, -1);
-				glVertex3f(i, j + 1, -1);
-				glVertex3f(i + 1, j + 1, -1);
-				glVertex3f(i + 1, j, -1);
-				glEnd();
-
-				// DIREITA
-				glBegin(GL_POLYGON);
-				//glColor3f(1.0, 0.0, 1.0);
-				glVertex3f(i + 1, j, 0);
-				glVertex3f(i + 1, j + 1, 0);
-				glVertex3f(i + 1, j + 1, -1);
-				glVertex3f(i + 1, j, -1);
-				glEnd();
-
-				// ESQUERDA
-				glBegin(GL_POLYGON);
-				//glColor3f(0.0, 1.0, 0.0);
-				glVertex3f(i, j, 0);
-				glVertex3f(i, j + 1, 0);
-				glVertex3f(i, j + 1, -1);
-				glVertex3f(i, j, -1);
-				glEnd();
-
-				// TOPO
-				glBegin(GL_POLYGON);
-				//glColor3f(0.0, 0.0, 1.0);
-				glVertex3f(i, j + 1, 0);
-				glVertex3f(i, j + 1, -1);
-				glVertex3f(i + 1, j + 1, -1);
-				glVertex3f(i + 1, j + 1, 0);
-				glEnd();
-
-				// BASE
-				glBegin(GL_POLYGON);
-				//glColor3f(1.0, 0.0, 0.0);
-				glVertex3f(i, j, 0);
-				glVertex3f(i, j, -1);
-				glVertex3f(i + 1, j, -1);
-				glVertex3f(i + 1, j, 0);
-				glEnd();
+			if (myMap[indexI][indexJ] > 0) {
+				DrawCube(i * cubeWidth + i, j * cubeLength + j, 0, cubeWidth, cubeLength, myMap[indexI][indexJ]);
 			}
 
 			if (indexControlI < scale - 1) {
@@ -231,127 +151,147 @@ void display(void)
 		}
 	}
 
-	glFlush();
+	fps();
+
 	glutSwapBuffers();
-
-	/*CurrentTickCount = clock() * 0.001f;
-	Fps++;
-
-	if ((CurrentTickCount - LastTickCount) > 1.0f)
-	{
-		LastTickCount = CurrentTickCount;
-		std::cout << (FrameRate, "[ FPS: %d ]", Fps);
-		Fps = 0;
-	}*/
 }
 
+// Inicializa parâmetros de rendering
+void Inicializa(void)
+{
+	GLfloat luzAmbiente[4] = { 0.2,0.2,0.2,1.0 };
+	GLfloat luzDifusa[4] = { 0.7,0.7,0.7,1.0 };		 // "cor" 
+	GLfloat luzEspecular[4] = { 1.0, 1.0, 1.0, 1.0 };// "brilho" 
+	GLfloat posicaoLuz[4] = { 0.0, 50.0, 50.0, 1.0 };
 
-// **********************************************************************
-//  void keyboard ( unsigned char key, int x, int y )
-//
-// **********************************************************************
+	// Capacidade de brilho do material
+	GLfloat especularidade[4] = { 1.0,1.0,1.0,1.0 };
+	GLint especMaterial = 60;
+
+	// Especifica que a cor de fundo da janela será preta
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+	// Habilita o modelo de colorização de Gouraud
+	glShadeModel(GL_SMOOTH);
+
+	// Define a refletância do material 
+	glMaterialfv(GL_FRONT, GL_SPECULAR, especularidade);
+	// Define a concentração do brilho
+	glMateriali(GL_FRONT, GL_SHININESS, especMaterial);
+
+	// Ativa o uso da luz ambiente 
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, luzAmbiente);
+
+	// Define os parâmetros da luz de número 0
+	glLightfv(GL_LIGHT0, GL_AMBIENT, luzAmbiente);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, luzDifusa);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, luzEspecular);
+	glLightfv(GL_LIGHT0, GL_POSITION, posicaoLuz);
+
+	// Habilita a definição da cor do material a partir da cor corrente
+	glEnable(GL_COLOR_MATERIAL);
+	//Habilita o uso de iluminação
+	glEnable(GL_LIGHTING);
+	// Habilita a luz de número 0
+	glEnable(GL_LIGHT0);
+	// Habilita o depth-buffering
+	glEnable(GL_DEPTH_TEST);
+
+	//tem que ver como aumentar a maxima distancia que pode se afastar
+	angle = 45 * scale;
+	if (angle > 130) angle = 130;
+}
+
+// Função usada para especificar o volume de visualização
+void EspecificaParametrosVisualizacao(void)
+{
+	// Especifica sistema de coordenadas de projeção
+	glMatrixMode(GL_PROJECTION);
+	// Inicializa sistema de coordenadas de projeção
+	glLoadIdentity();
+
+	// Especifica a projeção perspectiva
+	gluPerspective(angle, fAspect, 0.4, 500);
+
+	// Especifica sistema de coordenadas do modelo
+	glMatrixMode(GL_MODELVIEW);
+	// Inicializa sistema de coordenadas do modelo
+	glLoadIdentity();
+
+	// Especifica posição do observador e do alvo
+	gluLookAt(move_x, move_y, 200, move_x, move_y, 0, 0, 1, 0);
+}
+
+// Função callback chamada quando o tamanho da janela é alterado 
+void AlteraTamanhoJanela(GLsizei w, GLsizei h)
+{
+	// Para previnir uma divisão por zero
+	if (h == 0) h = 1;
+
+	// Especifica o tamanho da viewport
+	glViewport(0, 0, w, h);
+
+	// Calcula a correção de aspecto
+	fAspect = (GLfloat)w / (GLfloat)h;
+
+	EspecificaParametrosVisualizacao();
+}
+
+// Função callback chamada para gerenciar eventos do mouse
+void GerenciaMouse(int button, int state, int x, int y)
+{
+	if (button == GLUT_LEFT_BUTTON)
+		if (state == GLUT_DOWN) {  // Zoom-in
+			if (angle >= 10) angle -= angleMovement;
+		}
+	if (button == GLUT_RIGHT_BUTTON)
+		if (state == GLUT_DOWN) {  // Zoom-out
+			if (angle <= 130) angle += angleMovement;
+		}
+	EspecificaParametrosVisualizacao();
+	glutPostRedisplay();
+}
 
 void keyboard(unsigned char key, int x, int y)
 {
-
 	switch (key)
 	{
 		case 27:        // Termina o programa qdo
 			exit(0);   // a tecla ESC for pressionada
 			break;
 		case 119: //w
-			move_z += movement;
-			//  Requisitar atualização do display
-			glutPostRedisplay();
+			move_y += movement;
 			break;
 		case 115: //s
-			move_z -= movement;
-			//  Requisitar atualização do display
-			glutPostRedisplay();
+			move_y -= movement;
+			break;
+		case 97: //a
+			move_x -= movement;
+			break;
+		case 100: //d
+			move_x += movement;
 			break;
 		default:
 			break;
 	}
-}
 
-
-// **********************************************************************
-//  void arrow_keys ( int a_keys, int x, int y )
-//
-//
-// **********************************************************************
-void arrow_keys(int a_keys, int x, int y)
-{
-	//  Seta direita - aumenta rotação em 5 graus
-	if (a_keys == GLUT_KEY_RIGHT)
-		move_x += movement;
-
-	//  Seta para esquerda - diminui a rotação por 5 graus
-	else if (a_keys == GLUT_KEY_LEFT)
-		move_x -= movement;
-
-	else if (a_keys == GLUT_KEY_UP)
-		move_y -= movement;
-
-	else if (a_keys == GLUT_KEY_DOWN)
-		move_y += movement;
-
-	//  Requisitar atualização do display
+	EspecificaParametrosVisualizacao();
 	glutPostRedisplay();
 }
 
-// **********************************************************************
-//  void main ( int argc, char** argv )
-//
-//
-// **********************************************************************
-int main(int argc, char** argv)
+// Programa Principal
+int main(void)
 {
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH | GLUT_RGB);
-	glutInitWindowPosition(0, 0);
-
-	// Define o tamanho inicial da janela grafica do programa
-	glutInitWindowSize(650, 500);
-
-	// Cria a janela na tela, definindo o nome da
-	// que aparecera na barra de título da janela.
-	glutCreateWindow("Primeiro Programa em OpenGL");
-
-	// executa algumas inicializações
-	init();
-
-	// Habilite o teste de profundidade do Z-buffer
-	glEnable(GL_DEPTH_TEST);
-
-	// Define que o tratador de evento para
-	// o redesenho da tela. A funcao "display"
-	// será chamada automaticamente quando
-	// for necessário redesenhar a janela
-	glutDisplayFunc(display);
-
-	// Define que o tratador de evento para
-	// o redimensionamento da janela. A funcao "reshape"
-	// será chamada automaticamente quando
-	// o usuário alterar o tamanho da janela
-	glutReshapeFunc(reshape);
-
-	// Define que o tratador de evento para
-	// as teclas. A funcao "keyboard"
-	// será chamada automaticamente sempre
-	// o usuário pressionar uma tecla comum
+	csvReader myCsvReader("input.csv");
+	myMap = myCsvReader.getAllLines();
+	MAP_SIZE = myMap.size();
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+	glutInitWindowSize(400, 350);
+	glutCreateWindow("CG - T1 - Paulo & William");
+	glutDisplayFunc(Desenha);
+	glutReshapeFunc(AlteraTamanhoJanela);
+	glutMouseFunc(GerenciaMouse);
 	glutKeyboardFunc(keyboard);
-
-	// Define que o tratador de evento para
-	// as teclas especiais(F1, F2,... ALT-A,
-	// ALT-B, Teclas de Seta, ...).
-	// A funcao "arrow_keys" será chamada
-	// automaticamente sempre o usuário
-	// pressionar uma tecla especial
-	glutSpecialFunc(arrow_keys);
-
-	// inicia o tratamento dos eventos
+	Inicializa();
 	glutMainLoop();
-
-	return 0;
 }
