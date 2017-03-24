@@ -6,7 +6,7 @@
 
 #include "stdafx.h"
 #include <gl/glut.h>
-
+//#include <Windows.h>
 #include "csvReader.h"
 
 GLfloat angle, fAspect;
@@ -23,16 +23,18 @@ void fps()
 {
 	static float fps = 0.0f;
 	static float before = 0.0f;
-	static char strFPS[20] = { 0 };
-	static float now = (glutGet(GLUT_ELAPSED_TIME));
+	static float now = 0.0f;
+
+	now = glutGet(GLUT_ELAPSED_TIME);
 
 	++fps;
-	std::cout << "Now: " << now << " - FPS: " << fps << "\n";
-	if (now - before>1.0f)
+	//std::cout << "Now: " << now << " - FPS: " << fps << "\n";
+	if (now - before>1000.0f)
 	{
 		before = now;
 		std::cout << "FPS:" << int(fps) << std::endl;
 		fps = 0.0f;
+		//glutPostRedisplay();
 	}
 }
 
@@ -152,7 +154,7 @@ void Desenha(void)
 	}
 
 	fps();
-
+	//Sleep(0);
 	glutSwapBuffers();
 }
 
@@ -288,6 +290,7 @@ int main(void)
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowSize(400, 350);
 	glutCreateWindow("CG - T1 - Paulo & William");
+	//glutIdleFunc(Desenha);
 	glutDisplayFunc(Desenha);
 	glutReshapeFunc(AlteraTamanhoJanela);
 	glutMouseFunc(GerenciaMouse);
