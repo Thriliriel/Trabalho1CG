@@ -201,7 +201,7 @@ void Inicializa(void)
 
 	//tem que ver como aumentar a maxima distancia que pode se afastar
 	angle = 45 * scale;
-	if (angle > 130) angle = 130;
+	if (angle > 180) angle = 180;
 }
 
 // Função usada para especificar o volume de visualização
@@ -213,7 +213,7 @@ void EspecificaParametrosVisualizacao(void)
 	glLoadIdentity();
 
 	// Especifica a projeção perspectiva
-	gluPerspective(angle, fAspect, 0.4, 500);
+	gluPerspective(angle, fAspect, 0.4, 5000);
 
 	// Especifica sistema de coordenadas do modelo
 	glMatrixMode(GL_MODELVIEW);
@@ -248,7 +248,7 @@ void GerenciaMouse(int button, int state, int x, int y)
 		}
 	if (button == GLUT_RIGHT_BUTTON)
 		if (state == GLUT_DOWN) {  // Zoom-out
-			if (angle <= 130) angle += angleMovement;
+			if (angle <= 170) angle += angleMovement;
 		}
 	EspecificaParametrosVisualizacao();
 	glutPostRedisplay();
