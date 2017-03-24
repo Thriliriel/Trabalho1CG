@@ -11,7 +11,7 @@
 
 GLfloat angle, fAspect;
 float angleMovement = 5;
-float movement = 2;
+float movement = 5;
 float move_x = 0;
 float move_y = 0;
 std::vector<std::vector<int>> myMap;
@@ -19,23 +19,26 @@ std::vector<std::vector<int>> myMap;
 int scale = 1;
 int MAP_SIZE;
 
-void fps()
-{
-	static float fps = 0.0f;
-	static float before = 0.0f;
-	static float now = 0.0f;
+static float fpsTimer = 0.0f;
+static float before = 0.0f;
+static float now = 0.0f;
 
+void fps(int value)
+{
+	
 	now = glutGet(GLUT_ELAPSED_TIME);
 
-	++fps;
-	//std::cout << "Now: " << now << " - FPS: " << fps << "\n";
-	if (now - before>1000.0f)
+	++fpsTimer;
+	//std::cout << "Now: " << now << " - FPS: " << fpsTimer << "\n";
+	if (now - before > 1000.0f)
 	{
 		before = now;
-		std::cout << "FPS:" << int(fps) << std::endl;
-		fps = 0.0f;
+		std::cout << "FPS:" << int(fpsTimer) << std::endl;
+		fpsTimer = 0.0f;
 		//glutPostRedisplay();
 	}
+	//fps
+	glutTimerFunc(1, fps, value);
 }
 
 void DrawCube(double cubeCoord_x, double cubeCoord_y, double cubeCoord_z, double width, double length, double height)
@@ -153,7 +156,7 @@ void Desenha(void)
 		}
 	}
 
-	fps();
+	//fps();
 	//Sleep(0);
 	glutSwapBuffers();
 }
@@ -295,6 +298,7 @@ int main(void)
 	glutReshapeFunc(AlteraTamanhoJanela);
 	glutMouseFunc(GerenciaMouse);
 	glutKeyboardFunc(keyboard);
+	glutTimerFunc(2, fps, 0);
 	Inicializa();
 	glutMainLoop();
 }
