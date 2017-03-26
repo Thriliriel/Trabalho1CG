@@ -25,12 +25,12 @@ static float before = 0.0f;
 static float now = 0.0f;
 
 // actual vector representing the camera's direction
-float selfPosition_x = -15;
-float selfPosition_y = -65;
+float selfPosition_x = -15;//307
+float selfPosition_y = -65;//235
 float selfPosition_z = 3;
 
-float camPosition_x = -15;
-float camPosition_y = 35;
+float camPosition_x = -15;//307
+float camPosition_y = 35;//335
 float camPosition_z = 2;
 
 void EspecificaParametrosVisualizacao(void);
@@ -350,7 +350,7 @@ void processSpecialKeys(int key, int xx, int yy)
 // Programa Principal
 int main(void)
 {
-	csvReader myCsvReader("input.csv");
+	csvReader myCsvReader("input150x100.csv");
 	myMap = myCsvReader.getAllLines();
 	MAP_SIZE = myMap.size();
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
