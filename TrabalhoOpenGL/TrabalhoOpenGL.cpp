@@ -11,10 +11,6 @@
 #include <cstdlib>
 
 GLfloat angle, fAspect;
-float angleMovement = 5;
-float movement = 5;
-float move_x = 0;
-float move_y = 0;
 std::vector<std::vector<int>> myMap;
 //escala do mapa (default 1)
 int scale = 1;
@@ -301,17 +297,27 @@ void keyboard(unsigned char key, int x, int y)
 			exit(0);   // a tecla ESC for pressionada
 			break;
 		case 119: //w
-			move_y += movement;
+			++selfPosition_y;
+			++camPosition_y;
 			break;
 		case 115: //s
-			move_y -= movement;
+			--selfPosition_y;
+			--camPosition_y;
 			break;
 		case 97: //a
-			move_x -= movement;
+			--selfPosition_x;
+			--camPosition_x;
 			break;
 		case 100: //d
-			move_x += movement;
+			++selfPosition_x;
+			++camPosition_x;
 			break;
+		/*case 113: //q
+			--camPosition_x;
+			break;
+		case 101: //e
+			++camPosition_x;
+			break;*/
 		default:
 			break;
 	}
@@ -326,22 +332,22 @@ void processSpecialKeys(int key, int xx, int yy)
 	float fraction = 0.1f;
 
 	switch (key) {
-	case GLUT_KEY_LEFT:
-		--selfPosition_x;
-		--camPosition_x;
-		break;
-	case GLUT_KEY_RIGHT:
-		++selfPosition_x;
-		++camPosition_x;
-		break;
-	case GLUT_KEY_UP:
-		++selfPosition_y;
-		++camPosition_y;
-		break;
-	case GLUT_KEY_DOWN:
-		--selfPosition_y;
-		--camPosition_y;
-		break;
+		case GLUT_KEY_LEFT:
+			--selfPosition_x;
+			--camPosition_x;
+			break;
+		case GLUT_KEY_RIGHT:
+			++selfPosition_x;
+			++camPosition_x;
+			break;
+		case GLUT_KEY_UP:
+			++selfPosition_y;
+			++camPosition_y;
+			break;
+		case GLUT_KEY_DOWN:
+			--selfPosition_y;
+			--camPosition_y;
+			break;
 	}
 	EspecificaParametrosVisualizacao();
 	glutPostRedisplay();
