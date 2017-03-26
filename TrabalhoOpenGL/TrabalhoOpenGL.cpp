@@ -8,6 +8,7 @@
 #include <gl/glut.h>
 //#include <Windows.h>
 #include "csvReader.h"
+#include <cstdlib>
 
 GLfloat angle, fAspect;
 float angleMovement = 5;
@@ -22,6 +23,17 @@ int MAP_SIZE;
 static float fpsTimer = 0.0f;
 static float before = 0.0f;
 static float now = 0.0f;
+
+// actual vector representing the camera's direction
+float selfPosition_x = -15;
+float selfPosition_y = -65;
+float selfPosition_z = 3;
+
+float camPosition_x = -15;
+float camPosition_y = 35;
+float camPosition_z = 2;
+
+void EspecificaParametrosVisualizacao(void);
 
 void fps(int value)
 {
@@ -129,14 +141,24 @@ void Desenha(void)
 	int indexI = 0;
 	int indexControlJ = 0;
 	int indexControlI = 0;
-	for (int j = 0; j < MAP_SIZE*scale; j++) {
+	for (int i = 0; i < MAP_SIZE*scale; ++i)
+	{
 		indexI = 0;
 
-		for (int i = 0; i < MAP_SIZE*scale; i++) {
+		for (int j = 0; j < MAP_SIZE*scale; ++j)
+		{
+			/*double r_color = (rand() % 100) / 100.0f;
+			double g_color = (rand() % 100) / 100.0f;
+			double b_color = (rand() % 100) / 100.0f;*/
+			double b_color = 1.0f;
+			double g_color = i % 2 / 2.0f;
+			double r_color = j % 2 / 2.0f;
+			glColor3f(r_color, g_color, b_color);
 
 			if (myMap[indexI][indexJ] > 0) {
 				DrawCube(i * cubeWidth + i, j * cubeLength + j, 0, cubeWidth, cubeLength, myMap[indexI][indexJ]);
 			}
+
 
 			if (indexControlI < scale - 1) {
 				indexControlI++;
@@ -204,7 +226,8 @@ void Inicializa(void)
 
 	//tem que ver como aumentar a maxima distancia que pode se afastar
 	angle = 45 * scale;
-	if (angle > 180) angle = 180;
+	//if (angle > 180) angle = 180;
+	EspecificaParametrosVisualizacao();
 }
 
 // Função usada para especificar o volume de visualização
@@ -224,7 +247,8 @@ void EspecificaParametrosVisualizacao(void)
 	glLoadIdentity();
 
 	// Especifica posição do observador e do alvo
-	gluLookAt(move_x, move_y, 200, move_x, move_y, 0, 0, 1, 0);
+	gluLookAt(selfPosition_x, selfPosition_y, selfPosition_z, camPosition_x, camPosition_y, camPosition_z, 0, 1, 0);
+
 }
 
 // Função callback chamada quando o tamanho da janela é alterado 
@@ -245,14 +269,26 @@ void AlteraTamanhoJanela(GLsizei w, GLsizei h)
 // Função callback chamada para gerenciar eventos do mouse
 void GerenciaMouse(int button, int state, int x, int y)
 {
+	//if (button == GLUT_LEFT_BUTTON)
+	//	if (state == GLUT_DOWN) {  // Zoom-in
+	//		if (angle >= 10) angle -= angleMovement;
+	//	}
+	//if (button == GLUT_RIGHT_BUTTON)
+	//	if (state == GLUT_DOWN) {  // Zoom-out
+	//		if (angle <= 170) angle += angleMovement;
+	//	}
 	if (button == GLUT_LEFT_BUTTON)
-		if (state == GLUT_DOWN) {  // Zoom-in
-			if (angle >= 10) angle -= angleMovement;
-		}
+	{
+		selfPosition_z += 5;
+	}
 	if (button == GLUT_RIGHT_BUTTON)
-		if (state == GLUT_DOWN) {  // Zoom-out
-			if (angle <= 170) angle += angleMovement;
+	{
+		selfPosition_z -= 5;
+		if (selfPosition_z <= 3)
+		{
+			selfPosition_z = 3;
 		}
+	}
 	EspecificaParametrosVisualizacao();
 	glutPostRedisplay();
 }
@@ -284,6 +320,33 @@ void keyboard(unsigned char key, int x, int y)
 	glutPostRedisplay();
 }
 
+void processSpecialKeys(int key, int xx, int yy)
+{
+
+	float fraction = 0.1f;
+
+	switch (key) {
+	case GLUT_KEY_LEFT:
+		--selfPosition_x;
+		--camPosition_x;
+		break;
+	case GLUT_KEY_RIGHT:
+		++selfPosition_x;
+		++camPosition_x;
+		break;
+	case GLUT_KEY_UP:
+		++selfPosition_y;
+		++camPosition_y;
+		break;
+	case GLUT_KEY_DOWN:
+		--selfPosition_y;
+		--camPosition_y;
+		break;
+	}
+	EspecificaParametrosVisualizacao();
+	glutPostRedisplay();
+}
+
 // Programa Principal
 int main(void)
 {
@@ -298,6 +361,7 @@ int main(void)
 	glutReshapeFunc(AlteraTamanhoJanela);
 	glutMouseFunc(GerenciaMouse);
 	glutKeyboardFunc(keyboard);
+	glutSpecialFunc(processSpecialKeys);
 	glutTimerFunc(2, fps, 0);
 	Inicializa();
 	glutMainLoop();
