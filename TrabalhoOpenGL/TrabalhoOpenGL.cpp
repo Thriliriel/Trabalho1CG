@@ -10,26 +10,52 @@
 #include "csvReader.h"
 #include <cstdlib>
 
-GLfloat angle, fAspect;
+GLfloat angle = 45, fAspect;
 std::vector<std::vector<int>> myMap;
 //escala do mapa (default 1)
-int scale = 1;
+int scale = 2;
 int MAP_SIZE;
+//distancia da camera
+int camFarAway = 100;
 
 static float fpsTimer = 0.0f;
 static float before = 0.0f;
 static float now = 0.0f;
 
 // actual vector representing the camera's direction
-float selfPosition_x = -15;//307
-float selfPosition_y = -65;//235
-float selfPosition_z = 3;
-
-float camPosition_x = -15;//307
-float camPosition_y = 35;//335
-float camPosition_z = 2;
+Vector3 selfPosition(70, -10, 3);
+Vector3 camPosition(70, 30, 2.999f);
 
 void EspecificaParametrosVisualizacao(void);
+
+//otimizações
+bool detectarColisoes = true;
+bool subdividirEspaco = true;
+
+//distance between 2 points
+float Distance(Vector3 start, Vector3 end)
+{
+	float result = sqrt((end.x - start.x)*(end.x - start.x) + (end.y - start.y)*(end.y - start.y) + (end.z - start.z)*(end.z - start.z));
+
+	return result;
+}
+
+float GetAngle(Vector3 point1, Vector3 point2, Vector3 origin)
+{
+	float angle1 = 0, angle2 = 0;
+
+	//angle1 = atan2(EndPointB()->y - EndPointA()->y, EndPointB()->x - EndPointA()->x);
+	angle1 = atan2(point1.y - origin.y, point1.x - origin.x);
+
+	angle2 = atan2(point2.y - origin.y, point2.x - origin.x);
+
+	float result = angle2 - angle1;
+
+	//Multiply all values by 180/PI
+	result *= (180.0f / 3.14159265359f);
+
+	return result;
+}
 
 void fps(int value)
 {
@@ -109,34 +135,17 @@ void Desenha(void)
 	//branco, para dar melhor contraste
 	glColor3f(1, 1, 1);
 
-	//deixa mais centralizado, mas deve dar para fazer isso com a camera
-	glTranslatef(-50*scale, -50*scale, 0.0);
-
 	int cubeWidth(10);
 	int cubeLength(10);
 
 	int line(0);
-
-	//laço de desenho original do William
-	/*for (std::vector<std::vector<int>>::iterator lineIterator = myMap.begin(); lineIterator != myMap.end(); ++lineIterator)
-	{
-		int column(0);
-		for (std::vector<int>::iterator columnIterator = lineIterator->begin(); columnIterator != lineIterator->end(); ++columnIterator)
-		{
-			if (*columnIterator != 0)
-			{
-				DrawCube(line * cubeWidth + line, column * cubeLength + column, 0, cubeWidth, cubeLength, static_cast<double>(*columnIterator));
-			}
-			++column;
-		}
-		++line;
-	}*/
 
 	//laço com escala
 	int indexJ = 0;
 	int indexI = 0;
 	int indexControlJ = 0;
 	int indexControlI = 0;
+	int qntCubos = 0;
 	for (int i = 0; i < MAP_SIZE*scale; ++i)
 	{
 		indexI = 0;
@@ -151,10 +160,36 @@ void Desenha(void)
 			double r_color = j % 2 / 2.0f;
 			glColor3f(r_color, g_color, b_color);
 
-			if (myMap[indexI][indexJ] > 0) {
-				DrawCube(i * cubeWidth + i, j * cubeLength + j, 0, cubeWidth, cubeLength, myMap[indexI][indexJ]);
-			}
+			//se detectar colisoes
+			if (detectarColisoes) {
+				//calcula o centro do cubo
+				Vector3 centroCubo(((i * cubeWidth + i)) + cubeWidth / 2, ((j * cubeLength + j)) + cubeLength / 2, 0);
 
+				//testa o angulo do cubo com o angulo da camera
+				float angulo = GetAngle(camPosition, centroCubo, selfPosition);
+
+				//std::cout << angulo << " .. ";
+
+				//soh desenha se estiver dentro do angulo de perspectiva
+				//maior que o -angulo de abertura e menor que o angulo de abertura
+				if (angulo <= angle && angulo >= (angle - 2 * angle)) {
+					//se estiver dentro do angulo, verifica se está dentro da distancia limite (camFarAway)
+					if (Distance(selfPosition, centroCubo) <= camFarAway) {
+						//desenha o cubo
+						if (myMap[indexI][indexJ] > 0) {
+							qntCubos++;
+							DrawCube(i * cubeWidth + i, j * cubeLength + j, 0, cubeWidth, cubeLength, myMap[indexI][indexJ]);
+						}
+					}
+				}
+			}//senao, soh desenha
+			else {
+				//desenha o cubo
+				if (myMap[indexI][indexJ] > 0) {
+					qntCubos++;
+					DrawCube(i * cubeWidth + i, j * cubeLength + j, 0, cubeWidth, cubeLength, myMap[indexI][indexJ]);
+				}
+			}
 
 			if (indexControlI < scale - 1) {
 				indexControlI++;
@@ -173,6 +208,8 @@ void Desenha(void)
 			indexJ++;
 		}
 	}
+
+	//std::cout << "Qnt Cubos: " << qntCubos << "\n";
 
 	//fps();
 	//Sleep(0);
@@ -220,8 +257,6 @@ void Inicializa(void)
 	// Habilita o depth-buffering
 	glEnable(GL_DEPTH_TEST);
 
-	//tem que ver como aumentar a maxima distancia que pode se afastar
-	angle = 45 * scale;
 	//if (angle > 180) angle = 180;
 	EspecificaParametrosVisualizacao();
 }
@@ -235,7 +270,7 @@ void EspecificaParametrosVisualizacao(void)
 	glLoadIdentity();
 
 	// Especifica a projeção perspectiva
-	gluPerspective(angle, fAspect, 0.4, 5000);
+	gluPerspective(angle, fAspect, 0.4, camFarAway);
 
 	// Especifica sistema de coordenadas do modelo
 	glMatrixMode(GL_MODELVIEW);
@@ -243,7 +278,7 @@ void EspecificaParametrosVisualizacao(void)
 	glLoadIdentity();
 
 	// Especifica posição do observador e do alvo
-	gluLookAt(selfPosition_x, selfPosition_y, selfPosition_z, camPosition_x, camPosition_y, camPosition_z, 0, 1, 0);
+	gluLookAt(selfPosition.x, selfPosition.y, selfPosition.z, camPosition.x, camPosition.y, camPosition.z, 0, 1, 0);
 
 }
 
@@ -275,14 +310,14 @@ void GerenciaMouse(int button, int state, int x, int y)
 	//	}
 	if (button == GLUT_LEFT_BUTTON)
 	{
-		selfPosition_z += 5;
+		selfPosition.z += 5;
 	}
 	if (button == GLUT_RIGHT_BUTTON)
 	{
-		selfPosition_z -= 5;
-		if (selfPosition_z <= 3)
+		selfPosition.z -= 5;
+		if (selfPosition.z <= 3)
 		{
-			selfPosition_z = 3;
+			selfPosition.z = 3;
 		}
 	}
 	EspecificaParametrosVisualizacao();
@@ -297,20 +332,20 @@ void keyboard(unsigned char key, int x, int y)
 			exit(0);   // a tecla ESC for pressionada
 			break;
 		case 119: //w
-			++selfPosition_y;
-			++camPosition_y;
+			++selfPosition.y;
+			++camPosition.y;
 			break;
 		case 115: //s
-			--selfPosition_y;
-			--camPosition_y;
+			--selfPosition.y;
+			--camPosition.y;
 			break;
 		case 97: //a
-			--selfPosition_x;
-			--camPosition_x;
+			--selfPosition.x;
+			--camPosition.x;
 			break;
 		case 100: //d
-			++selfPosition_x;
-			++camPosition_x;
+			++selfPosition.x;
+			++camPosition.x;
 			break;
 		/*case 113: //q
 			--camPosition_x;
@@ -333,20 +368,20 @@ void processSpecialKeys(int key, int xx, int yy)
 
 	switch (key) {
 		case GLUT_KEY_LEFT:
-			--selfPosition_x;
-			--camPosition_x;
+			--selfPosition.x;
+			--camPosition.x;
 			break;
 		case GLUT_KEY_RIGHT:
-			++selfPosition_x;
-			++camPosition_x;
+			++selfPosition.x;
+			++camPosition.x;
 			break;
 		case GLUT_KEY_UP:
-			++selfPosition_y;
-			++camPosition_y;
+			++selfPosition.y;
+			++camPosition.y;
 			break;
 		case GLUT_KEY_DOWN:
-			--selfPosition_y;
-			--camPosition_y;
+			--selfPosition.y;
+			--camPosition.y;
 			break;
 	}
 	EspecificaParametrosVisualizacao();
@@ -361,7 +396,7 @@ int main(void)
 	MAP_SIZE = myMap.size();
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowSize(400, 350);
-	glutCreateWindow("CG - T1 - Paulo & William");
+	glutCreateWindow("CG - T1 - Paulo");
 	//glutIdleFunc(Desenha);
 	glutDisplayFunc(Desenha);
 	glutReshapeFunc(AlteraTamanhoJanela);
