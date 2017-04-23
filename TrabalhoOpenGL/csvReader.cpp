@@ -75,3 +75,40 @@ csvReader::getAllLines(void)
 
 	return thisTokenizedFile;
 }
+
+std::vector<std::vector<std::vector<int>>> csvReader::getAllSubLines(void)
+{
+	std::vector<std::vector<int>> thisTokenizedFile;
+	std::vector<std::vector<std::vector<int>>> cells;
+
+	while (InputFileStream)
+	{
+		std::string thisLine;
+		if (std::getline(*InputFileStream, thisLine))
+		{
+			std::istringstream thisStream(thisLine);
+			std::vector<int> thisTokenizedStream;
+			while (thisStream)
+			{
+				std::string thisToken;
+				if (!getline(thisStream, thisToken, ','))
+				{
+					break;
+				}
+				else
+				{
+					thisTokenizedStream.push_back(std::stoi(thisToken));
+				}
+			}
+			thisTokenizedFile.push_back(thisTokenizedStream);
+			cells.push_back(thisTokenizedFile);
+			thisTokenizedFile.clear();
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return cells;
+}

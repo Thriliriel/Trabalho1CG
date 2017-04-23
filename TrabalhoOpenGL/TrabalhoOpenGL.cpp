@@ -11,25 +11,33 @@
 #include <cstdlib>
 
 GLfloat angle = 45, fAspect;
+//largura do cubo eh de 10. Logo, o tamanho do cenário vai ser a quantidade de espaços x10.
+//ex: cenário padrão 150x100 = tamanho 1500x1000
 std::vector<std::vector<int>> myMap;
 //escala do mapa (default 1)
-int scale = 2;
+int scale = 1;
 int MAP_SIZE;
+int MAP_WIDTH;
 //distancia da camera
 int camFarAway = 100;
+//tamanho de cada célula
+int cellSize = camFarAway * 2;
+//int cellSize = 200;
+//mapa para subdivisao de espaço
+std::vector<std::vector<std::vector<int>>> mySubMap;
 
 static float fpsTimer = 0.0f;
 static float before = 0.0f;
 static float now = 0.0f;
 
 // actual vector representing the camera's direction
-Vector3 selfPosition(70, -10, 3);
-Vector3 camPosition(70, 30, 2.999f);
+Vector3 selfPosition(60, -10, 3);
+Vector3 camPosition(60, 30, 2.999f);
 
 void EspecificaParametrosVisualizacao(void);
 
 //otimizações
-bool detectarColisoes = true;
+bool detectarColisoes = false;
 bool subdividirEspaco = true;
 
 //distance between 2 points
@@ -146,70 +154,122 @@ void Desenha(void)
 	int indexControlJ = 0;
 	int indexControlI = 0;
 	int qntCubos = 0;
-	for (int i = 0; i < MAP_SIZE*scale; ++i)
-	{
-		indexI = 0;
 
-		for (int j = 0; j < MAP_SIZE*scale; ++j)
-		{
-			/*double r_color = (rand() % 100) / 100.0f;
-			double g_color = (rand() % 100) / 100.0f;
-			double b_color = (rand() % 100) / 100.0f;*/
-			double b_color = 1.0f;
-			double g_color = i % 2 / 2.0f;
-			double r_color = j % 2 / 2.0f;
-			glColor3f(r_color, g_color, b_color);
+	//se mapa subdividido, desenha por ele
+	if (subdividirEspaco) {
+		for (int c = 0; c < mySubMap.size(); c++) {
+			int i = 0;
+			int j = -1;
+			for (int d = 0; d < mySubMap[c][0].size(); d++) {
+				//posicao i e j definido pelo d
+				j++;
 
-			//se detectar colisoes
-			if (detectarColisoes) {
-				//calcula o centro do cubo
-				Vector3 centroCubo(((i * cubeWidth + i)) + cubeWidth / 2, ((j * cubeLength + j)) + cubeLength / 2, 0);
+				if (d % (cellSize / 10) == 0 && d > 0) {
+					i++;
+					j = 0;
+				}
 
-				//testa o angulo do cubo com o angulo da camera
-				float angulo = GetAngle(camPosition, centroCubo, selfPosition);
+				double b_color = 1.0f;
+				double g_color = i % 2 / 2.0f;
+				double r_color = j % 2 / 2.0f;
+				glColor3f(r_color, g_color, b_color);
 
-				//std::cout << angulo << " .. ";
+				//se detectar colisoes
+				/*if (detectarColisoes) {
+					//calcula o centro do cubo
+					Vector3 centroCubo(((i * cubeWidth + i)) + cubeWidth / 2, ((j * cubeLength + j)) + cubeLength / 2, 0);
 
-				//soh desenha se estiver dentro do angulo de perspectiva
-				//maior que o -angulo de abertura e menor que o angulo de abertura
-				if (angulo <= angle && angulo >= (angle - 2 * angle)) {
-					//se estiver dentro do angulo, verifica se está dentro da distancia limite (camFarAway)
-					if (Distance(selfPosition, centroCubo) <= camFarAway) {
-						//desenha o cubo
-						if (myMap[indexI][indexJ] > 0) {
-							qntCubos++;
-							DrawCube(i * cubeWidth + i, j * cubeLength + j, 0, cubeWidth, cubeLength, myMap[indexI][indexJ]);
+					//testa o angulo do cubo com o angulo da camera
+					float angulo = GetAngle(camPosition, centroCubo, selfPosition);
+
+					//std::cout << angulo << " .. ";
+
+					//soh desenha se estiver dentro do angulo de perspectiva
+					//maior que o -angulo de abertura e menor que o angulo de abertura
+					if (angulo <= angle && angulo >= (angle - 2 * angle)) {
+						//se estiver dentro do angulo, verifica se está dentro da distancia limite (camFarAway)
+						if (Distance(selfPosition, centroCubo) <= camFarAway) {
+							//desenha o cubo
+							if (myMap[indexI][indexJ] > 0) {
+								qntCubos++;
+								DrawCube(i * cubeWidth + i, j * cubeLength + j, 0, cubeWidth, cubeLength, myMap[indexI][indexJ]);
+							}
 						}
 					}
+				}//senao, soh desenha
+				else {*/
+					//desenha o cubo
+					if (mySubMap[c][0][d] > 0) {
+						qntCubos++;
+						DrawCube(i * cubeWidth + i, j * cubeLength + j, 0, cubeWidth, cubeLength, mySubMap[c][0][d]);
+					}
+				//}
+			}
+		}
+	}//senão, pelo mapa normal
+	else {
+		for (int i = 0; i < MAP_SIZE*scale; ++i)
+		{
+			indexI = 0;
+
+			for (int j = 0; j < MAP_SIZE*scale; ++j)
+			{
+				double b_color = 1.0f;
+				double g_color = i % 2 / 2.0f;
+				double r_color = j % 2 / 2.0f;
+				glColor3f(r_color, g_color, b_color);
+
+				//se detectar colisoes
+				if (detectarColisoes) {
+					//calcula o centro do cubo
+					Vector3 centroCubo(((i * cubeWidth + i)) + cubeWidth / 2, ((j * cubeLength + j)) + cubeLength / 2, 0);
+
+					//testa o angulo do cubo com o angulo da camera
+					float angulo = GetAngle(camPosition, centroCubo, selfPosition);
+
+					//std::cout << angulo << " .. ";
+
+					//soh desenha se estiver dentro do angulo de perspectiva
+					//maior que o -angulo de abertura e menor que o angulo de abertura
+					if (angulo <= angle && angulo >= (angle - 2 * angle)) {
+						//se estiver dentro do angulo, verifica se está dentro da distancia limite (camFarAway)
+						if (Distance(selfPosition, centroCubo) <= camFarAway) {
+							//desenha o cubo
+							if (myMap[indexI][indexJ] > 0) {
+								qntCubos++;
+								DrawCube(i * cubeWidth + i, j * cubeLength + j, 0, cubeWidth, cubeLength, myMap[indexI][indexJ]);
+							}
+						}
+					}
+				}//senao, soh desenha
+				else {
+					//desenha o cubo
+					if (myMap[indexI][indexJ] > 0) {
+						qntCubos++;
+						DrawCube(i * cubeWidth + i, j * cubeLength + j, 0, cubeWidth, cubeLength, myMap[indexI][indexJ]);
+					}
 				}
-			}//senao, soh desenha
-			else {
-				//desenha o cubo
-				if (myMap[indexI][indexJ] > 0) {
-					qntCubos++;
-					DrawCube(i * cubeWidth + i, j * cubeLength + j, 0, cubeWidth, cubeLength, myMap[indexI][indexJ]);
+
+				if (indexControlI < scale - 1) {
+					indexControlI++;
+				}
+				else {
+					indexControlI = 0;
+					indexI++;
 				}
 			}
 
-			if (indexControlI < scale - 1) {
-				indexControlI++;
+			if (indexControlJ < scale - 1) {
+				indexControlJ++;
 			}
 			else {
-				indexControlI = 0;
-				indexI++;
+				indexControlJ = 0;
+				indexJ++;
 			}
-		}
-
-		if (indexControlJ < scale - 1) {
-			indexControlJ++;
-		}
-		else {
-			indexControlJ = 0;
-			indexJ++;
 		}
 	}
 
-	//std::cout << "Qnt Cubos: " << qntCubos << "\n";
+	std::cout << "Qnt Cubos: " << qntCubos << "\n";
 
 	//fps();
 	//Sleep(0);
@@ -391,9 +451,20 @@ void processSpecialKeys(int key, int xx, int yy)
 // Programa Principal
 int main(void)
 {
-	csvReader myCsvReader("input150x100.csv");
-	myMap = myCsvReader.getAllLines();
-	MAP_SIZE = myMap.size();
+	//se subdividir espaço estiver marcado, busca o mapa subdividido
+	if (subdividirEspaco) {
+		csvReader myCsvReader("inputSub240x240.csv");
+		mySubMap = myCsvReader.getAllSubLines();
+		MAP_SIZE = 240;
+		MAP_WIDTH = 240;
+	}//senao, mapa normal
+	else {
+		csvReader myCsvReader("input240x240.csv");
+		myMap = myCsvReader.getAllLines();
+		MAP_SIZE = myMap.size();
+		MAP_WIDTH = myMap[0].size();
+	}
+
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowSize(400, 350);
 	glutCreateWindow("CG - T1 - Paulo");

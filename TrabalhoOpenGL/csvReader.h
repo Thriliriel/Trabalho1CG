@@ -11,4 +11,5 @@ public:
 	csvReader(std::string fileName);
 	std::vector<int> getNextLine(void);
 	std::vector<std::vector<int>> getAllLines(void);
+	std::vector<std::vector<std::vector<int>>> getAllSubLines(void);
 };
