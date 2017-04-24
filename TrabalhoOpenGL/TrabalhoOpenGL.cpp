@@ -19,10 +19,10 @@ int scale = 1;
 int MAP_SIZE;
 int MAP_WIDTH;
 //distancia da camera
-int camFarAway = 100;
+int camFarAway = 10000;
 //tamanho de cada célula
-int cellSize = camFarAway * 2;
-//int cellSize = 200;
+//int cellSize = camFarAway * 2;
+int cellSize = 200;
 //mapa para subdivisao de espaço
 std::vector<std::vector<std::vector<int>>> mySubMap;
 
@@ -38,7 +38,7 @@ void EspecificaParametrosVisualizacao(void);
 
 //otimizações
 bool detectarColisoes = false;
-bool subdividirEspaco = true;
+bool subdividirEspaco = false;
 
 //distance between 2 points
 float Distance(Vector3 start, Vector3 end)
@@ -156,19 +156,13 @@ void Desenha(void)
 		int bonusCellJ = -cellSize / 10;
 		for (int c = 0; c < mySubMap.size(); c++) {
 			//bonus cell
-			/*if (c > 0 && c % (MAP_SIZE / (cellSize / 10)) == 0) {
+			if (c > 0 && c % (MAP_SIZE / (cellSize / 10)) == 0) {
 				bonusCellI += cellSize / 10;
 				bonusCellJ = 0;
 			}
 			else {
 				bonusCellJ += cellSize / 10;
 			}
-
-			for (int i = 0; i < cellSize / 10; i++) {
-				for (int j = 0; j < cellSize / 10; j++) {
-					flagMap[i][j] = myMap[i + bonusCellI][j + bonusCellJ];
-				}
-			}*/
 
 			for (int i = 0; i < cellSize / 10; i++) {
 				for (int j = 0; j < cellSize / 10; j++) {
@@ -204,11 +198,12 @@ void Desenha(void)
 						//desenha o cubo
 						if (mySubMap[c][i][j] > 0) {
 							qntCubos++;
-							DrawCube(i * cubeWidth + i, j * cubeLength + j, 0, cubeWidth, cubeLength, mySubMap[c][i][j]);
+							DrawCube((i * cubeWidth + i) + (bonusCellI * cubeWidth), (j * cubeLength + j) + (bonusCellJ * cubeLength), 0, cubeWidth, cubeLength, mySubMap[c][i][j]);
 						}
 					}
 				}
 			}
+			int oi = 0;
 		}
 	}
 	else {
