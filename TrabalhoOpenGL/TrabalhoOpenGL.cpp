@@ -141,73 +141,83 @@ void Desenha(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//glColor3f(0.0f, 0.0f, 1.0f);
 	//branco, para dar melhor contraste
-	glColor3f(1, 1, 1);
+	//glColor3f(1, 1, 1);
 
 	int cubeWidth(10);
 	int cubeLength(10);
 
 	int line(0);
-
-	//laço com escala
-	int indexJ = 0;
-	int indexI = 0;
-	int indexControlJ = 0;
-	int indexControlI = 0;
 	int qntCubos = 0;
 
-	//se mapa subdividido, desenha por ele
+	//espaço subdivido
 	if (subdividirEspaco) {
+		//bonus cell
+		int bonusCellI = 0;
+		int bonusCellJ = -cellSize / 10;
 		for (int c = 0; c < mySubMap.size(); c++) {
-			int i = 0;
-			int j = -1;
-			for (int d = 0; d < mySubMap[c][0].size(); d++) {
-				//posicao i e j definido pelo d
-				j++;
+			//bonus cell
+			/*if (c > 0 && c % (MAP_SIZE / (cellSize / 10)) == 0) {
+				bonusCellI += cellSize / 10;
+				bonusCellJ = 0;
+			}
+			else {
+				bonusCellJ += cellSize / 10;
+			}
 
-				if (d % (cellSize / 10) == 0 && d > 0) {
-					i++;
-					j = 0;
+			for (int i = 0; i < cellSize / 10; i++) {
+				for (int j = 0; j < cellSize / 10; j++) {
+					flagMap[i][j] = myMap[i + bonusCellI][j + bonusCellJ];
 				}
+			}*/
 
-				double b_color = 1.0f;
-				double g_color = i % 2 / 2.0f;
-				double r_color = j % 2 / 2.0f;
-				glColor3f(r_color, g_color, b_color);
+			for (int i = 0; i < cellSize / 10; i++) {
+				for (int j = 0; j < cellSize / 10; j++) {
+					double b_color = 1.0f;
+					double g_color = i % 2 / 2.0f;
+					double r_color = j % 2 / 2.0f;
+					glColor3f(r_color, g_color, b_color);
 
-				//se detectar colisoes
-				/*if (detectarColisoes) {
-					//calcula o centro do cubo
-					Vector3 centroCubo(((i * cubeWidth + i)) + cubeWidth / 2, ((j * cubeLength + j)) + cubeLength / 2, 0);
+					//se detectar colisoes
+					if (detectarColisoes) {
+						//calcula o centro do cubo
+						/*Vector3 centroCubo(((i * cubeWidth + i)) + cubeWidth / 2, ((j * cubeLength + j)) + cubeLength / 2, 0);
 
-					//testa o angulo do cubo com o angulo da camera
-					float angulo = GetAngle(camPosition, centroCubo, selfPosition);
+						//testa o angulo do cubo com o angulo da camera
+						float angulo = GetAngle(camPosition, centroCubo, selfPosition);
 
-					//std::cout << angulo << " .. ";
+						//std::cout << angulo << " .. ";
 
-					//soh desenha se estiver dentro do angulo de perspectiva
-					//maior que o -angulo de abertura e menor que o angulo de abertura
-					if (angulo <= angle && angulo >= (angle - 2 * angle)) {
+						//soh desenha se estiver dentro do angulo de perspectiva
+						//maior que o -angulo de abertura e menor que o angulo de abertura
+						if (angulo <= angle && angulo >= (angle - 2 * angle)) {
 						//se estiver dentro do angulo, verifica se está dentro da distancia limite (camFarAway)
 						if (Distance(selfPosition, centroCubo) <= camFarAway) {
-							//desenha o cubo
-							if (myMap[indexI][indexJ] > 0) {
-								qntCubos++;
-								DrawCube(i * cubeWidth + i, j * cubeLength + j, 0, cubeWidth, cubeLength, myMap[indexI][indexJ]);
-							}
+						//desenha o cubo
+						if (myMap[indexI][indexJ] > 0) {
+						qntCubos++;
+						DrawCube(i * cubeWidth + i, j * cubeLength + j, 0, cubeWidth, cubeLength, myMap[indexI][indexJ]);
+						}
+						}
+						}*/
+					}//senao, soh desenha
+					else {
+						//desenha o cubo
+						if (mySubMap[c][i][j] > 0) {
+							qntCubos++;
+							DrawCube(i * cubeWidth + i, j * cubeLength + j, 0, cubeWidth, cubeLength, mySubMap[c][i][j]);
 						}
 					}
-				}//senao, soh desenha
-				else {*/
-					//desenha o cubo
-					if (mySubMap[c][0][d] > 0) {
-						qntCubos++;
-						DrawCube(i * cubeWidth + i, j * cubeLength + j, 0, cubeWidth, cubeLength, mySubMap[c][0][d]);
-					}
-				//}
+				}
 			}
 		}
-	}//senão, pelo mapa normal
+	}
 	else {
+		//laço com escala
+		int indexJ = 0;
+		int indexI = 0;
+		int indexControlJ = 0;
+		int indexControlI = 0;
+
 		for (int i = 0; i < MAP_SIZE*scale; ++i)
 		{
 			indexI = 0;
@@ -451,18 +461,48 @@ void processSpecialKeys(int key, int xx, int yy)
 // Programa Principal
 int main(void)
 {
-	//se subdividir espaço estiver marcado, busca o mapa subdividido
+	csvReader myCsvReader("input240x240.csv");
+	myMap = myCsvReader.getAllLines();
+	MAP_SIZE = myMap.size();
+	MAP_WIDTH = myMap[0].size();
+
+	//definir a estrutura subdividida
 	if (subdividirEspaco) {
-		csvReader myCsvReader("inputSub240x240.csv");
-		mySubMap = myCsvReader.getAllSubLines();
-		MAP_SIZE = 240;
-		MAP_WIDTH = 240;
-	}//senao, mapa normal
-	else {
-		csvReader myCsvReader("input240x240.csv");
-		myMap = myCsvReader.getAllLines();
-		MAP_SIZE = myMap.size();
-		MAP_WIDTH = myMap[0].size();
+		//para cada celula
+		std::vector<std::vector<int>> flagMap(cellSize/10);
+		//inicializa
+		for (int k = 0; k < flagMap.size(); k++) {
+			for (int l = 0; l < cellSize / 10; l++) {
+				flagMap[k].push_back(0);
+			}
+		}
+		
+		//quantidade de celulas
+		int qntCells = MAP_SIZE / (cellSize / 10);
+		qntCells *= qntCells;
+
+		//preenche
+		//bonus cell
+		int bonusCellI = 0;
+		int bonusCellJ = -cellSize / 10;
+		for (int c = 0; c < qntCells; c++) {
+			//bonus cell
+			if (c > 0 && c % (MAP_SIZE / (cellSize / 10)) == 0) {
+				bonusCellI += cellSize / 10;
+				bonusCellJ = 0;
+			}
+			else {
+				bonusCellJ += cellSize / 10;
+			}
+
+			for (int i = 0; i < cellSize / 10; i++) {
+				for (int j = 0; j < cellSize / 10; j++) {
+					flagMap[i][j] = myMap[i + bonusCellI][j + bonusCellJ];
+				}
+			}
+
+			mySubMap.push_back(flagMap);
+		}
 	}
 
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
