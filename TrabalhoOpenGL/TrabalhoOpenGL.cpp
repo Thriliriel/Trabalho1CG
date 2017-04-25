@@ -19,10 +19,10 @@ int scale = 1;
 int MAP_SIZE;
 int MAP_WIDTH;
 //distancia da camera
-int camFarAway = 10000;
+int camFarAway = 100;
 //tamanho de cada célula
-//int cellSize = camFarAway * 2;
-int cellSize = 200;
+int cellSize = camFarAway * 2;
+//int cellSize = 200;
 //mapa para subdivisao de espaço
 std::vector<std::vector<std::vector<int>>> mySubMap;
 
@@ -31,14 +31,20 @@ static float before = 0.0f;
 static float now = 0.0f;
 
 // actual vector representing the camera's direction
-Vector3 selfPosition(60, -10, 3);
+Vector3 selfPosition(60, 0, 3);
 Vector3 camPosition(60, 30, 2.999f);
 
 void EspecificaParametrosVisualizacao(void);
 
 //otimizações
 bool detectarColisoes = false;
-bool subdividirEspaco = false;
+bool subdividirEspaco = true;
+
+int qntCubos = 0;
+int cubeWidth(10);
+int cubeLength(10);
+int bonusCellI = 0;
+int bonusCellJ = -cellSize / 10;
 
 //distance between 2 points
 float Distance(Vector3 start, Vector3 end)
@@ -135,26 +141,131 @@ void DrawCube(double cubeCoord_x, double cubeCoord_y, double cubeCoord_z, double
 	glEnd();
 }
 
+void DesenhaCelula(int indCell) {
+	//pega o valor em matriz
+	int cellX = indCell / (MAP_SIZE / (cellSize / 10));
+	int cellY = indCell % (MAP_SIZE / (cellSize / 10));
+
+	//bonus cell
+	bonusCellI = cellX * cellSize / 10;
+	bonusCellJ = cellY * cellSize / 10;
+
+	int h = 0;
+	//desenha essa célula
+	for (int i = 0; i < cellSize / 10; i++) {
+		for (int j = 0; j < cellSize / 10; j++) {
+			double b_color = 1.0f;
+			double g_color = i % 2 / 2.0f;
+			double r_color = j % 2 / 2.0f;
+			glColor3f(r_color, g_color, b_color);
+
+			//se detectar colisoes
+			if (detectarColisoes) {
+				//calcula o centro do cubo
+				/*Vector3 centroCubo(((i * cubeWidth + i)) + cubeWidth / 2, ((j * cubeLength + j)) + cubeLength / 2, 0);
+
+				//testa o angulo do cubo com o angulo da camera
+				float angulo = GetAngle(camPosition, centroCubo, selfPosition);
+
+				//std::cout << angulo << " .. ";
+
+				//soh desenha se estiver dentro do angulo de perspectiva
+				//maior que o -angulo de abertura e menor que o angulo de abertura
+				if (angulo <= angle && angulo >= (angle - 2 * angle)) {
+				//se estiver dentro do angulo, verifica se está dentro da distancia limite (camFarAway)
+				if (Distance(selfPosition, centroCubo) <= camFarAway) {
+				//desenha o cubo
+				if (mySubMap[c][i][j] > 0) {
+				qntCubos++;
+				DrawCube((i * cubeWidth + i) + (bonusCellI * cubeWidth), (j * cubeLength + j) + (bonusCellJ * cubeLength), 0, cubeWidth, cubeLength, mySubMap[c][i][j]);
+				}
+				}
+				}*/
+			}//senao, soh desenha
+			else {
+				//desenha o cubo
+				//@TODO: o mapa nao está ficando igual ao do sem Subdivisao (invertido, talvez...?)
+				if (mySubMap[indCell][i][j] > 0) {
+					qntCubos++;
+					DrawCube((i * cubeWidth + i) + (bonusCellI * cubeWidth), (j * cubeLength + j) + (bonusCellJ * cubeLength), 0, cubeWidth, cubeLength, mySubMap[indCell][i][j]);
+				}
+			}
+		}
+	}
+}
+
 // Função callback chamada para fazer o desenho
 void Desenha(void)
 {
+	qntCubos = 0;
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//glColor3f(0.0f, 0.0f, 1.0f);
 	//branco, para dar melhor contraste
 	//glColor3f(1, 1, 1);
 
-	int cubeWidth(10);
-	int cubeLength(10);
-
 	int line(0);
-	int qntCubos = 0;
-
+	
 	//espaço subdivido
 	if (subdividirEspaco) {
-		//bonus cell
-		int bonusCellI = 0;
-		int bonusCellJ = -cellSize / 10;
-		for (int c = 0; c < mySubMap.size(); c++) {
+		//a partir da posição da camera, encontrar a celula dela
+		int posCamCellX = selfPosition.x / cellSize;
+		int posCamCellY = selfPosition.y / cellSize;
+
+		//std::cout << "CamCell: " << posCamCellX << "x" << posCamCellY << "\n";
+
+		int qntCells = MAP_SIZE / (cellSize / 10);
+		int indCamCell = (posCamCellX * qntCells) + posCamCellY;
+
+		//inicia com um valor não válido, uma vez que pode estar em algum corner
+		int vizinhaEsquerda = -1;
+		int vizinhaDireita = -1;
+		int vizinhaEsquerdaFrente = -1;
+		int vizinhaFrente = -1;
+		int vizinhaDireitaFrente = -1;
+
+		//se existir para a esquerda, seta
+		if (posCamCellX - 1 >= 0) {
+			vizinhaEsquerda = ((posCamCellX - 1) * qntCells) + posCamCellY;
+		}
+		//se existir para a direita, seta
+		if (posCamCellX + 1 < qntCells) {
+			vizinhaDireita = ((posCamCellX + 1) * qntCells) + posCamCellY;
+		}
+		//se existir esquerda frente, seta
+		if (posCamCellX - 1 >= 0 && posCamCellY + 1 < qntCells) {
+			vizinhaEsquerdaFrente = ((posCamCellX - 1) * qntCells) + (posCamCellY + 1);
+		}
+		//se existir frente, seta
+		if (posCamCellY + 1 < qntCells) {
+			vizinhaFrente = (posCamCellX * qntCells) + (posCamCellY + 1);
+		}
+		//se existir direita frente, seta
+		if (posCamCellX + 1 < qntCells && posCamCellY + 1 < qntCells) {
+			vizinhaDireitaFrente = ((posCamCellX + 1) * qntCells) + (posCamCellY + 1);
+		}
+
+		//só precisa desenhar essa celula da cam e as vizinhas dos lados e da frente
+		DesenhaCelula(indCamCell);
+
+		//vizinhas
+		if (vizinhaEsquerda > -1) {
+			DesenhaCelula(vizinhaEsquerda);
+		}
+		if (vizinhaDireita > -1) {
+			DesenhaCelula(vizinhaDireita);
+		}
+		if (vizinhaEsquerdaFrente > -1) {
+			DesenhaCelula(vizinhaEsquerdaFrente);
+		}
+		if (vizinhaFrente > -1) {
+			DesenhaCelula(vizinhaFrente);
+		}
+		if (vizinhaDireitaFrente > -1) {
+			DesenhaCelula(vizinhaDireitaFrente);
+		}
+
+		/*for (int c = 0; c < mySubMap.size(); c++) {
 			//bonus cell
 			if (c > 0 && c % (MAP_SIZE / (cellSize / 10)) == 0) {
 				bonusCellI += cellSize / 10;
@@ -184,18 +295,19 @@ void Desenha(void)
 						//soh desenha se estiver dentro do angulo de perspectiva
 						//maior que o -angulo de abertura e menor que o angulo de abertura
 						if (angulo <= angle && angulo >= (angle - 2 * angle)) {
-						//se estiver dentro do angulo, verifica se está dentro da distancia limite (camFarAway)
-						if (Distance(selfPosition, centroCubo) <= camFarAway) {
-						//desenha o cubo
-						if (myMap[indexI][indexJ] > 0) {
-						qntCubos++;
-						DrawCube(i * cubeWidth + i, j * cubeLength + j, 0, cubeWidth, cubeLength, myMap[indexI][indexJ]);
-						}
-						}
+							//se estiver dentro do angulo, verifica se está dentro da distancia limite (camFarAway)
+							if (Distance(selfPosition, centroCubo) <= camFarAway) {
+								//desenha o cubo
+								if (mySubMap[c][i][j] > 0) {
+									qntCubos++;
+									DrawCube((i * cubeWidth + i) + (bonusCellI * cubeWidth), (j * cubeLength + j) + (bonusCellJ * cubeLength), 0, cubeWidth, cubeLength, mySubMap[c][i][j]);
+								}
+							}
 						}*/
-					}//senao, soh desenha
+					/*}//senao, soh desenha
 					else {
 						//desenha o cubo
+						//@TODO: o mapa nao está ficando igual ao do sem Subdivisao (invertido, talvez...?)
 						if (mySubMap[c][i][j] > 0) {
 							qntCubos++;
 							DrawCube((i * cubeWidth + i) + (bonusCellI * cubeWidth), (j * cubeLength + j) + (bonusCellJ * cubeLength), 0, cubeWidth, cubeLength, mySubMap[c][i][j]);
@@ -203,8 +315,7 @@ void Desenha(void)
 					}
 				}
 			}
-			int oi = 0;
-		}
+		}*/
 	}
 	else {
 		//laço com escala
@@ -478,8 +589,6 @@ int main(void)
 
 		//preenche
 		//bonus cell
-		int bonusCellI = 0;
-		int bonusCellJ = -cellSize / 10;
 		for (int c = 0; c < qntCells; c++) {
 			//bonus cell
 			if (c > 0 && c % (MAP_SIZE / (cellSize / 10)) == 0) {
