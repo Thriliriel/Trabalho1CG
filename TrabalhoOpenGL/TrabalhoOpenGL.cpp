@@ -37,7 +37,7 @@ Vector3 camPosition(60, 30, 2.999f);
 void EspecificaParametrosVisualizacao(void);
 
 //otimizações
-bool detectarColisoes = false;
+bool detectarColisoes = true;
 bool subdividirEspaco = true;
 
 int qntCubos = 0;
@@ -162,7 +162,8 @@ void DesenhaCelula(int indCell) {
 			//se detectar colisoes
 			if (detectarColisoes) {
 				//calcula o centro do cubo
-				/*Vector3 centroCubo(((i * cubeWidth + i)) + cubeWidth / 2, ((j * cubeLength + j)) + cubeLength / 2, 0);
+				Vector3 centroCubo(((i * cubeWidth + i) + (bonusCellI * cubeWidth)) + cubeWidth / 2, 
+					((j * cubeLength + j) + (bonusCellJ * cubeLength)) + cubeLength / 2, 0);
 
 				//testa o angulo do cubo com o angulo da camera
 				float angulo = GetAngle(camPosition, centroCubo, selfPosition);
@@ -173,14 +174,14 @@ void DesenhaCelula(int indCell) {
 				//maior que o -angulo de abertura e menor que o angulo de abertura
 				if (angulo <= angle && angulo >= (angle - 2 * angle)) {
 				//se estiver dentro do angulo, verifica se está dentro da distancia limite (camFarAway)
-				if (Distance(selfPosition, centroCubo) <= camFarAway) {
-				//desenha o cubo
-				if (mySubMap[c][i][j] > 0) {
-				qntCubos++;
-				DrawCube((i * cubeWidth + i) + (bonusCellI * cubeWidth), (j * cubeLength + j) + (bonusCellJ * cubeLength), 0, cubeWidth, cubeLength, mySubMap[c][i][j]);
+					if (Distance(selfPosition, centroCubo) <= camFarAway) {
+						//desenha o cubo
+						if (mySubMap[indCell][i][j] > 0) {
+							qntCubos++;
+							DrawCube((i * cubeWidth + i) + (bonusCellI * cubeWidth), (j * cubeLength + j) + (bonusCellJ * cubeLength), 0, cubeWidth, cubeLength, mySubMap[indCell][i][j]);
+						}
+					}
 				}
-				}
-				}*/
 			}//senao, soh desenha
 			else {
 				//desenha o cubo
