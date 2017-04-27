@@ -37,8 +37,8 @@ Vector3 camPosition(60, 30, 2.999f);
 void EspecificaParametrosVisualizacao(void);
 
 //otimizações
-bool detectarColisoes = true;
-bool subdividirEspaco = true;
+bool detectarColisoes = false;
+bool subdividirEspaco = false;
 
 int qntCubos = 0;
 int cubeWidth(10);
